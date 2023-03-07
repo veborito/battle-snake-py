@@ -97,14 +97,39 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["down"] = False
     
     # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    # opponents = game_state['board']['snakes']
-
+    opponents = game_state['board']['snakes']
+    opponents_body = opponents[0]['body']
+    ennemies_curr_pos = set()
+    for position in opponents_body:
+        ennemies_curr_pos.add((position['x'], position['y']))
+    if (my_head["x"] + 1, my_head["y"]) in ennemies_curr_pos:
+        is_move_safe["right"] = False 
+    if (my_head["x"] - 1, my_head["y"]) in ennemies_curr_pos:
+        is_move_safe["left"] = False
+    if (my_head["x"], my_head["y"] + 1) in ennemies_curr_pos:
+        is_move_safe["up"] = False
+    if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
+        is_move_safe["down"] = False
+    if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
+        is_move_safe["up"] = False
+        is_move_safe["right"] = False
+    if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
+        is_move_safe["down"] = False
+        is_move_safe["left"] = False
+    print("-------------- HEAD POSITION -----------------")
+    print((my_head['x'] , my_head['y']))
+    print("\n\n\n")
+    print("-------------- ENNEMIES POSITIONS ------------")
+    print(game_state['board']['snakes'])
+    print("\n\n\n")
     # Are there any safe moves left?
     safe_moves = []
     for move, isSafe in is_move_safe.items():
         if isSafe:
             safe_moves.append(move)
-
+    print("----------------- SAFE MOVES ----------------")
+    print(safe_moves)
+    print("\n\n\n")
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
