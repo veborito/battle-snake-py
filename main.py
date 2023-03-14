@@ -38,6 +38,7 @@ def start(game_state: typing.Dict):
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
 
+# fonctions utiles
 
 # move is called on every turn and returns your next move
 # Valid moves are "up", "down", "left", or "right"
@@ -82,6 +83,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["up"] = False
     elif my_head["y"] == 0:
         is_move_safe["down"] = False
+
+
     # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
     my_body = game_state['you']['body']
     my_body_set = set()
@@ -96,12 +99,15 @@ def move(game_state: typing.Dict) -> typing.Dict:
     if (my_head["x"], my_head["y"] - 1) in my_body_set:
         is_move_safe["down"] = False
     
+
     # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    opponents = game_state['board']['snakes']
-    opponents_body = opponents[0]['body']
+    snakes = game_state['board']['snakes']
     ennemies_curr_pos = set()
-    for position in opponents_body:
-        ennemies_curr_pos.add((position['x'], position['y']))
+    for snake in snakes :
+        if snake['name'] != game_state['you']['name']:
+            for position in snake['body']:
+                ennemies_curr_pos.add((position['x'], position['y']))
+    
     if (my_head["x"] + 1, my_head["y"]) in ennemies_curr_pos:
         is_move_safe["right"] = False 
     if (my_head["x"] - 1, my_head["y"]) in ennemies_curr_pos:
@@ -110,36 +116,44 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["up"] = False
     if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
         is_move_safe["down"] = False
-    if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
-        is_move_safe["up"] = False
-        is_move_safe["right"] = False
-    if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
-        is_move_safe["down"] = False
-        is_move_safe["left"] = False
-    print("-------------- HEAD POSITION -----------------")
-    print((my_head['x'] , my_head['y']))
-    print("\n\n\n")
-    print("-------------- ENNEMIES POSITIONS ------------")
-    print(game_state['board']['snakes'])
-    print("\n\n\n")
+    # if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
+    #     is_move_safe["up"] = False
+    #     is_move_safe["right"] = False
+    # if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
+    #     is_move_safe["down"] = False
+    #     is_move_safe["left"] = False
+
+    # print("-------------- HEAD POSITION -----------------")
+    # print((my_head['x'] , my_head['y']))
+    # print("\n\n\n")
+
+    # print("-------------- ENNEMIES POSITIONS ------------")
+    # print(game_state['board']['snakes'])
+    # print("\n\n\n")
+
+    # print("--------------   MYSELF   ------------")
+    # print(game_state['you'])
+    # print("\n\n\n")
+
+
     # Are there any safe moves left?
     safe_moves = []
     for move, isSafe in is_move_safe.items():
         if isSafe:
             safe_moves.append(move)
-    print("----------------- SAFE MOVES ----------------")
-    print(safe_moves)
-    print("\n\n\n")
+    # print("----------------- SAFE MOVES ----------------")
+    # print(safe_moves)
+    # print("\n\n\n")
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
+
 
     # Choose a random move from the safe ones
     next_move = random.choice(safe_moves)
 
     # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
-    # food = game_state['board']['food']
-
+    food = game_state['board']['food']
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
 
