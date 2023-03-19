@@ -168,93 +168,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
             nearest_cherry_coord = (cherry['x'], cherry['y'])
             nearest_cherry = distance_cherry
 
-    # ------------------- BREADTH FIRST ALGO IMPLEMENTATION ---------------------
-    
-    def valid_move(board, my_head , moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-            if not (0 <= i < len(board) and 0 <= j < len(board[0])):
-                return False
-            elif (board[i][j] == "V" or board[i][j] == "#" or board[i][j] == "$" or board[i][j] == "B"):
-                return False
-        return True
-
-
-    def find_end(board, my_head, moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-        if (board[i][j] == "O"):
-            add_path(matrice, my_head, moves)
-            return True
-        return False
-
-
-    def add_path(board, my_head, moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-            board[i][j] = '+'
-        return
-
-    timer = round(time.time() * 1000)
-    moves = queue.Queue()
-    moves.put("")
-    add = ""
-    while not find_end(matrice, my_head, add):
-        add = moves.get()
-        if (round(time.time() * 1000) - timer) > 250:
-            break
-        for i in ["L", "R", "U", "D"]:
-            put = add + i
-            if valid_move(matrice, my_head, put):
-                moves.put(put)
-        if (round(time.time() * 1000) - timer) > 250:
-            break
-    print("------------------------------------\n")
-    print(f"ms after algo : {timer}")
-    print(f"PATH: {add}")
-    print("------------------------------------\n")
-    for row in matrice:
-        print(row)
-    
-    def follow_path(path):
-        if path == "L":
-            return 'left'
-        elif path == "R":
-            return 'right'
-        elif path == "U":
-            return 'up'
-        elif path == "D":
-            return 'down'
     # Are there any safe moves left?
     safe_moves = []
     for move, isSafe in is_move_safe.items():
@@ -270,8 +183,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
 
     # Choose a random move from the safe ones
-    #next_move = random.choice(safe_moves)
-    next_move = follow_path(add[0])
+    next_move = random.choice(safe_moves)
 
     # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
     food = game_state['board']['food']
