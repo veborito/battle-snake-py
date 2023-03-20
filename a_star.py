@@ -154,6 +154,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     # ------------------- A STAR ALGO IMPLEMENTATION ---------------------
     
+    # Les fonctions sont importés de a_star_utils.py
+    
     graph = make_graph(matrice)
     start = start_node(graph)
     end = end_node(graph)
@@ -166,9 +168,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
         if a_star_res != False:
             path_list = path(a_star_res, end)
             path_list.reverse()
-            n_matrice = [[ node.state for node in row] for row in graph]
-            for row in n_matrice:
-                print (row)
             moves = []
             for i in range(len(path_list) - 1):
                 if path_list[i][0] > path_list[i + 1][0]:

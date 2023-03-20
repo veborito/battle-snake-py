@@ -118,25 +118,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["up"] = False
     if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
         is_move_safe["down"] = False
-    # if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
-    #     is_move_safe["up"] = False
-    #     is_move_safe["right"] = False
-    # if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
-    #     is_move_safe["down"] = False
-    #     is_move_safe["left"] = False
-
-    # print("-------------- HEAD POSITION -----------------")
-    # print((my_head['x'] , my_head['y']))
-    # print("\n\n\n")
-
-    # print("-------------- ENNEMIES POSITIONS ------------")
-    # print(game_state['board']['snakes'])
-    # print("\n\n\n")
-
-    # print("--------------   MYSELF   ------------")
-    # print(game_state['you'])
-    # print("\n\n\n")
-
+    
     # ---------------------- CREATION D'UNE MATRICE REPRESENTANT L'ETAT DE LA PARTIE ------------------------
      
     matrice = [[' ' for i in range(board_width)] 
@@ -155,19 +137,11 @@ def move(game_state: typing.Dict) -> typing.Dict:
             for position in snake['body'][1:]:
                 matrice[(board_height - 1) - position['y']][position['x']] = '#'
                 
-
-    # ---------------------------------- ALGO IMPLEMENTATION -------------------------
+    # ---------------------------------- AJOUT DE LA NOURRITURE DANS LA MATRICE -------------------------
     
     food =  game_state['board']['food']
-    nearest_cherry = math.inf
-    nearest_cherry_coord = (0,0)
     for cherry in food:
         matrice[(board_height - 1) - cherry['y']][cherry['x']] = 'O'
-        distance_cherry = (abs(my_head_x - cherry['x']) + abs(my_head_y - cherry['y']))
-        if nearest_cherry > distance_cherry:
-            nearest_cherry_coord = (cherry['x'], cherry['y'])
-            nearest_cherry = distance_cherry
-
     # ------------------- BREADTH FIRST ALGO IMPLEMENTATION ---------------------
     
     def valid_move(board, my_head , moves):
@@ -229,7 +203,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     moves = queue.Queue()
     moves.put("")
     add = ""
-    breathd_first = 1
+    breadth_first = 1
     while not find_end(matrice, my_head, add):
         add = moves.get()
         for i in ["L", "R", "U", "D"]:
@@ -237,14 +211,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
             if valid_move(matrice, my_head, put):
                 moves.put(put)
         if (round(time.time() * 1000) - timer) > 10:
-            breathd_first = 0
+            breadth_first = 0
             break
-    print("------------------------------------\n")
-    print(f"ms after algo : {timer}")
-    print(f"PATH: {add}")
-    print("------------------------------------\n")
-    for row in matrice:
-        print(row)
     
     def follow_path(path):
         if path == "L":
@@ -265,9 +233,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
 
-
-    # Choose a random move from the safe ones
-    if not breathd_first:
+    # Choisit entre breadChoose a random move from the safe ones
+    if not breadth_first:
         next_move = random.choice(safe_moves)
     else:
         next_move = follow_path(add[0])
