@@ -1,164 +1,212 @@
-from queue import PriorityQueue
+# Welcome to
+# __________         __    __  .__                               __
+# \______   \_____ _/  |__/  |_|  |   ____   ______ ____ _____  |  | __ ____
+#  |    |  _/\__  \\   __\   __\  | _/ __ \ /  ___//    \\__  \ |  |/ // __ \
+#  |    |   \ / __ \|  |  |  | |  |_\  ___/ \___ \|   |  \/ __ \|    <\  ___/
+#  |________/(______/__|  |__| |____/\_____>______>___|__(______/__|__\\_____>
+#
+# This file can be a nice home for your Battlesnake logic and helper functions.
+#
+# To get you started we've included code to prevent your Battlesnake from moving backwards.
+# For more info see docs.battlesnake.com
+
+import random
+import typing
 import math
+import queue
 import time
+from a_star_utils import Node, make_graph, h, path, a_star, start_node, end_node
 
-matrice = [
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', '#', '#', ' ', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', 'O', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', '#', 'V'],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '$', ' ', ' '],
-[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '$', '$', ' '],
-[' ', ' ', ' ', ' ', 'B', ' ', ' ', ' ', ' ', ' ', ' ']
-]
+# info is called when you create your Battlesnake on play.battlesnake.com
+# and controls your Battlesnake's appearance
+# TIP: If you open your Battlesnake URL in a browser you should see this data
+def info() -> typing.Dict:
+    print("INFO")
 
-class Node:
-    def __init__(self, row, col, state):
-        self.row = row
-        self.col = col # j'ai besoin qu'il soit deja correctement modifié
-        self.neighbors = []
-        self.state = state
-        
-    def get_pos(self):
-        return self.row, self.col
-    
-    def is_closed(self):
-        return self.state == 'X'
-    
-    def is_open(self):
-        return self.state == '1'
-    
-    def is_barrier(self):
-        return self.state == '$' or self.state == 'B' or self.state == 'V' or self.state == '#'
-    
-    def is_start(self):
-        return self.state == 'B'
-    
-    def is_end(self):
-        return self.state == 'O'
-    
-    def make_closed(self):
-        self.state = 'X'
-    
-    def make_open(self):
-        self.state = '1'
-    
-    def make_path(self):
-        self.state = '+'
-    
-    def make_start(self):
-        self.state = 'B'
-    
-    def make_end(self):
-        self.state = 'O'
-    
-    def update_neighbors(self, graph):
-        self.neighbors = []
-        if self.row < len(graph) - 1 and not graph[self.row + 1][self.col].is_barrier(): # DOWN
-            self.neighbors.append(graph[self.row + 1][self.col])
+    return {
+        "apiversion": "1",
+        "author": "veborito",  # TODO: Your Battlesnake Username
+        "color": "#00cc00",  # TODO: Choose color
+        "head": "snail",  # TODO: Choose head
+        "tail": "ion",  # TODO: Choose tail
+    }
 
-        if self.row > 0 and not graph[self.row - 1][self.col].is_barrier(): # UP
-            self.neighbors.append(graph[self.row - 1][self.col])
 
-        if self.col < len(graph[0]) - 1 and not graph[self.row][self.col + 1].is_barrier(): # RIGHT
-            self.neighbors.append(graph[self.row][self.col + 1])
+# start is called when your Battlesnake begins a game
+def start(game_state: typing.Dict):
+    print("GAME START")
 
-        if self.col > 0 and not graph[self.row][self.col - 1].is_barrier(): # LEFT
-            self.neighbors.append(graph[self.row][self.col - 1])
+
+# end is called when your Battlesnake finishes a game
+def end(game_state: typing.Dict):
+    print("GAME OVER\n")
+
+# fonctions utiles
+
+# move is called on every turn and returns your next move
+# Valid moves are "up", "down", "left", or "right"
+# See https://docs.battlesnake.com/api/example-move for available data
+def move(game_state: typing.Dict) -> typing.Dict:
+
+    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
+
+    # We've included code to prevent your Battlesnake from moving backwards
+    my_head = game_state["you"]["body"][0]  # Coordinates of your head
+    my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
+
+    if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
+        is_move_safe["left"] = False
+
+    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
+        is_move_safe["right"] = False
+
+    elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
+        is_move_safe["down"] = False
+
+    elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
+        is_move_safe["up"] = False
+
+    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
+    board_width = game_state['board']['width']
+    board_height = game_state['board']['height']
+
+    if  my_head["x"] == board_width - 1:
+        is_move_safe["right"] = False
+        if my_head["y"] == board_height - 1:
+            is_move_safe["up"] = False
+        elif my_head["y"] == 0:
+            is_move_safe["down"] = False
+    elif my_head["x"] == 0:
+        is_move_safe["left"] = False
+        if my_head["y"] == board_height - 1:
+            is_move_safe["up"] = False
+        elif my_head["y"] == 0:
+            is_move_safe["down"] = False
+    elif my_head["y"] == board_height - 1:
+        is_move_safe["up"] = False
+    elif my_head["y"] == 0:
+        is_move_safe["down"] = False
+
+
+    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
+    my_body = game_state['you']['body']
+    my_body_set = set()
+    for el in my_body:
+        my_body_set.add((el["x"], el["y"]))
+    if (my_head["x"] + 1, my_head["y"]) in my_body_set:
+        is_move_safe["right"] = False 
+    if (my_head["x"] - 1, my_head["y"]) in my_body_set:
+        is_move_safe["left"] = False
+    if (my_head["x"], my_head["y"] + 1) in my_body_set:
+        is_move_safe["up"] = False
+    if (my_head["x"], my_head["y"] - 1) in my_body_set:
+        is_move_safe["down"] = False
     
-    def __lt__(self, other):
-        return False
 
-def h(p1, p2):
-    x1, y1 = p1
-    x2, y2 = p2
+    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
+    snakes = game_state['board']['snakes']
+    ennemies_curr_pos = set()
+    for snake in snakes :
+        if snake['name'] != game_state['you']['name']:
+            for position in snake['body']:
+                ennemies_curr_pos.add((position['x'], position['y']))
     
-    return abs(x1 - x2) + abs(y1 - y2)
+    if (my_head["x"] + 1, my_head["y"]) in ennemies_curr_pos:
+        is_move_safe["right"] = False 
+    if (my_head["x"] - 1, my_head["y"]) in ennemies_curr_pos:
+        is_move_safe["left"] = False
+    if (my_head["x"], my_head["y"] + 1) in ennemies_curr_pos:
+        is_move_safe["up"] = False
+    if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
+        is_move_safe["down"] = False
 
-def make_graph(matrice):
-    graph = []
-    for i in range(len(matrice)):
-        graph.append([])
-        for j in range(len(matrice[0])):
-            node = Node(i, j, matrice[i][j])
-            graph[i].append(node)
-    return graph
+    # ---------------------- CREATION D'UNE MATRICE REPRESENTANT L'ETAT DE LA PARTIE ------------------------
+     
+    matrice = [[' ' for i in range(board_width)] 
+               for i in  range(board_height)]   
+    my_head_x = my_head["x"]
+    my_head_y = my_head["y"]
+    matrice[(board_height - 1) - my_head_y][my_head_x] = 'B'  # pour avoir la position au bon endroit dans la matrice
+    for snake in snakes :
+        if snake['name'] == game_state['you']['name']:
+            for position in snake['body'][1:]:
+                matrice[(board_height - 1) - position['y']][position['x']] = '$'
+    for snake in snakes :
+        if snake['name'] != game_state['you']['name']:
+            ennemy_head = snake["body"][0]
+            matrice[(board_height - 1) - ennemy_head["y"]][ennemy_head["x"]] = 'V'
+            for position in snake['body'][1:]:
+                matrice[(board_height - 1) - position['y']][position['x']] = '#'
+                
 
-def path(came_from, current):
-    coord_list = [current.get_pos()]
-    while current in came_from:
-        current = came_from[current]
-        coord_list.append(current.get_pos())
-        current.make_path()
-    return coord_list
-
-def a_star(graph, start, end):
-    count = 0
-    open_set = PriorityQueue()
-    open_set.put((0, 0, start))
-    came_from = {} # wich node came from where 
-    g_score = {node: float("inf") for row in graph for node in row} # number of step beetwen the start and the node
-    g_score[start] = 0
-    f_score = {node: float("inf") for row in graph for node in row} # manhattan distant or L distance for node to the end 
-    f_score[start] = h(start.get_pos(), end.get_pos())
+    # ---------------------------------- NEAREST FOOD -------------------------
     
-    open_set_hash = {start} # check what's inside priority queue
-    while not open_set.empty():
-        current = open_set.get()[2] # current node
-        open_set_hash.remove(current)
-        
-        if current == end:  
-            end.make_end()
-            return came_from
-        
-        for neighbor in current.neighbors:
-            temp_g_score = g_score[current] + 1
-            
-            if temp_g_score < g_score[neighbor]:
-                came_from[neighbor] = current
-                g_score[neighbor] = temp_g_score
-                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-                if neighbor not in open_set_hash:
-                    count += 1
-                    open_set.put((f_score[neighbor], count, neighbor))
-                    open_set_hash.add(neighbor)
-                    neighbor.make_open()
-        
-        if current != start:
-            current.make_closed()
-        
-    return False
+    food =  game_state['board']['food']
+    nearest_cherry = math.inf
+    nearest_cherry_coord = (0,0)
+    for cherry in food:
+        distance_cherry = (abs(my_head_x - cherry['x']) + abs(my_head_y - cherry['y']))
+        if nearest_cherry > distance_cherry:
+            nearest_cherry_coord = (cherry['x'], cherry['y'])
+            nearest_cherry = distance_cherry
+    
+    matrice[(board_height - 1) - nearest_cherry_coord[1]][nearest_cherry_coord[0]] = 'O'
 
-def start_node(graph):
-    for row in graph:
-        for node in row:
-            if node.is_start():
-                return node
-    return False
+    # ------------------- A STAR ALGO IMPLEMENTATION ---------------------
+    
+    graph = make_graph(matrice)
+    start = start_node(graph)
+    end = end_node(graph)
+    if start != False and end != False:
+        for row in graph:
+            for node in row:
+                node.update_neighbors(graph)
 
-def end_node(graph):
-    for row in graph:
-        for node in row:
-            if node.is_end():
-                return node
-    return False   
+        a_star_res = a_star(graph, start, end)
+        if a_star_res != False:
+            path_list = path(a_star_res, end)
+            path_list.reverse()
+            n_matrice = [[ node.state for node in row] for row in graph]
+            for row in n_matrice:
+                print (row)
+            moves = []
+            for i in range(len(path_list) - 1):
+                if path_list[i][0] > path_list[i + 1][0]:
+                    moves.append("up")
+                elif path_list[i][0] < path_list[i + 1][0]:
+                    moves.append("down")
+                elif path_list[i][1] > path_list[i + 1][1]:
+                    moves.append("left")
+                elif path_list[i][1] < path_list[i + 1][1]:
+                    moves.append("right")
+                    
+            next_move = moves[0]
+            print(f"MOVE {game_state['turn']}: {next_move}")
+            return {"move": next_move}
+    
+    
+    # Are there any safe moves left?
+    safe_moves = []
+    for move, isSafe in is_move_safe.items():
+        if isSafe:
+            safe_moves.append(move)
 
+    if len(safe_moves) == 0:
+        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
+        return {"move": "down"}
+
+
+    # Choose a random move from the safe ones
+    next_move = random.choice(safe_moves)
+    
+    # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
+    food = game_state['board']['food']
+    print(f"MOVE {game_state['turn']}: {next_move}")
+    return {"move": next_move}
+
+
+# Start server when `python main.py` is run
 if __name__ == "__main__":
-	graph = make_graph(matrice)
-	start = start_node(graph)
-	end = end_node(graph)
-	for row in graph:
-		for node in row:
-			node.update_neighbors(graph)
+    from server import run_server
 
-	a_star_res = a_star(graph, start, end)
-	path_list = path(a_star_res, end)
-	start.make_start()
-	n_matrice = [[ node.state for node in row] for row in graph]
-	for row in n_matrice:
-		print (row)
-	print(path_list)
+    run_server({"info": info, "start": start, "move": move, "end": end})
