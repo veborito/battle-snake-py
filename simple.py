@@ -25,9 +25,9 @@ def info() -> typing.Dict:
     return {
         "apiversion": "1",
         "author": "veborito",  # TODO: Your Battlesnake Username
-        "color": "#00cc00",  # TODO: Choose color
-        "head": "snail",  # TODO: Choose head
-        "tail": "ion",  # TODO: Choose tail
+        "color": "#736CCB",  # TODO: Choose color
+        "head": "caffeine",  # TODO: Choose head
+        "tail": "coffe",  # TODO: Choose tail
     }
 
 
@@ -118,55 +118,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["up"] = False
     if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
         is_move_safe["down"] = False
-    # if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
-    #     is_move_safe["up"] = False
-    #     is_move_safe["right"] = False
-    # if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
-    #     is_move_safe["down"] = False
-    #     is_move_safe["left"] = False
-
-    # print("-------------- HEAD POSITION -----------------")
-    # print((my_head['x'] , my_head['y']))
-    # print("\n\n\n")
-
-    # print("-------------- ENNEMIES POSITIONS ------------")
-    # print(game_state['board']['snakes'])
-    # print("\n\n\n")
-
-    # print("--------------   MYSELF   ------------")
-    # print(game_state['you'])
-    # print("\n\n\n")
-
-    # ---------------------- CREATION D'UNE MATRICE REPRESENTANT L'ETAT DE LA PARTIE ------------------------
-     
-    matrice = [[' ' for i in range(board_width)] 
-               for i in  range(board_height)]   
-    my_head_x = my_head["x"]
-    my_head_y = my_head["y"]
-    matrice[(board_height - 1) - my_head_y][my_head_x] = 'B'  # pour avoir la position au bon endroit dans la matrice
-    for snake in snakes :
-        if snake['name'] == game_state['you']['name']:
-            for position in snake['body'][1:]:
-                matrice[(board_height - 1) - position['y']][position['x']] = '$'
-    for snake in snakes :
-        if snake['name'] != game_state['you']['name']:
-            ennemy_head = snake["body"][0]
-            matrice[(board_height - 1) - ennemy_head["y"]][ennemy_head["x"]] = 'V'
-            for position in snake['body'][1:]:
-                matrice[(board_height - 1) - position['y']][position['x']] = '#'
-                
-
-    # ---------------------------------- ALGO IMPLEMENTATION -------------------------
-    
-    food =  game_state['board']['food']
-    nearest_cherry = math.inf
-    nearest_cherry_coord = (0,0)
-    for cherry in food:
-        matrice[(board_height - 1) - cherry['y']][cherry['x']] = 'O'
-        distance_cherry = (abs(my_head_x - cherry['x']) + abs(my_head_y - cherry['y']))
-        if nearest_cherry > distance_cherry:
-            nearest_cherry_coord = (cherry['x'], cherry['y'])
-            nearest_cherry = distance_cherry
 
     # Are there any safe moves left?
     safe_moves = []
