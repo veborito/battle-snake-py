@@ -15,6 +15,7 @@ import typing
 import math
 import queue
 import time
+from a_star import Node, make_graph, h, path, a_star, start_node, end_node
 
 # info is called when you create your Battlesnake on play.battlesnake.com
 # and controls your Battlesnake's appearance
@@ -118,24 +119,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
         is_move_safe["up"] = False
     if (my_head["x"], my_head["y"] - 1) in ennemies_curr_pos:
         is_move_safe["down"] = False
-    # if (my_head["x"] + 1, my_head["y"] + 1) in ennemies_curr_pos:
-    #     is_move_safe["up"] = False
-    #     is_move_safe["right"] = False
-    # if (my_head["x"] - 1, my_head["y"] - 1) in ennemies_curr_pos:
-    #     is_move_safe["down"] = False
-    #     is_move_safe["left"] = False
-
-    # print("-------------- HEAD POSITION -----------------")
-    # print((my_head['x'] , my_head['y']))
-    # print("\n\n\n")
-
-    # print("-------------- ENNEMIES POSITIONS ------------")
-    # print(game_state['board']['snakes'])
-    # print("\n\n\n")
-
-    # print("--------------   MYSELF   ------------")
-    # print(game_state['you'])
-    # print("\n\n\n")
 
     # ---------------------- CREATION D'UNE MATRICE REPRESENTANT L'ETAT DE LA PARTIE ------------------------
      
@@ -156,105 +139,52 @@ def move(game_state: typing.Dict) -> typing.Dict:
                 matrice[(board_height - 1) - position['y']][position['x']] = '#'
                 
 
-    # ---------------------------------- ALGO IMPLEMENTATION -------------------------
+    # ---------------------------------- NEAREST FOOD -------------------------
     
     food =  game_state['board']['food']
     nearest_cherry = math.inf
     nearest_cherry_coord = (0,0)
     for cherry in food:
-        matrice[(board_height - 1) - cherry['y']][cherry['x']] = 'O'
         distance_cherry = (abs(my_head_x - cherry['x']) + abs(my_head_y - cherry['y']))
         if nearest_cherry > distance_cherry:
             nearest_cherry_coord = (cherry['x'], cherry['y'])
             nearest_cherry = distance_cherry
-
-    # ------------------- BREADTH FIRST ALGO IMPLEMENTATION ---------------------
     
-    def valid_move(board, my_head , moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-            if not (0 <= i < len(board) and 0 <= j < len(board[0])):
-                return False
-            elif (board[i][j] == "V" or board[i][j] == "#" or board[i][j] == "$" or board[i][j] == "B"):
-                return False
-        return True
+    matrice[(board_height - 1) - nearest_cherry_coord[1]][nearest_cherry_coord[0]] = 'O'
 
-
-    def find_end(board, my_head, moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-        if (board[i][j] == "O"):
-            add_path(matrice, my_head, moves)
-            return True
-        return False
-
-
-    def add_path(board, my_head, moves):
-        i = (len(board) - 1) - my_head["y"]
-        j = my_head["x"]
-        
-        for move in moves:
-            if move == "L":
-                j -= 1
-            elif move == "R":
-                j += 1
-            elif move == "U":
-                i -= 1
-            elif move == "D":
-                i += 1   
-            board[i][j] = '+'
-        return
-
-    timer = round(time.time() * 1000)
-    moves = queue.Queue()
-    moves.put("")
-    add = ""
-    breathd_first = 1
-    while not find_end(matrice, my_head, add):
-        add = moves.get()
-        for i in ["L", "R", "U", "D"]:
-            put = add + i
-            if valid_move(matrice, my_head, put):
-                moves.put(put)
-        if (round(time.time() * 1000) - timer) > 10:
-            breathd_first = 0
-            break
-    print("------------------------------------\n")
-    print(f"ms after algo : {timer}")
-    print(f"PATH: {add}")
-    print("------------------------------------\n")
-    for row in matrice:
-        print(row)
+    # ------------------- A STAR ALGO IMPLEMENTATION ---------------------
     
-    def follow_path(path):
-        if path == "L":
-            return 'left'
-        elif path == "R":
-            return 'right'
-        elif path == "U":
-            return 'up'
-        elif path == "D":
-            return 'down'
+    graph = make_graph(matrice)
+    start = start_node(graph)
+    end = end_node(graph)
+    if start != False and end != False:
+        for row in graph:
+            for node in row:
+                node.update_neighbors(graph)
+
+        a_star_res = a_star(graph, start, end)
+        if a_star_res != False:
+            path_list = path(a_star_res, end)
+            path_list.reverse()
+            n_matrice = [[ node.state for node in row] for row in graph]
+            for row in n_matrice:
+                print (row)
+            moves = []
+            for i in range(len(path_list) - 1):
+                if path_list[i][0] > path_list[i + 1][0]:
+                    moves.append("up")
+                elif path_list[i][0] < path_list[i + 1][0]:
+                    moves.append("down")
+                elif path_list[i][1] > path_list[i + 1][1]:
+                    moves.append("left")
+                elif path_list[i][1] < path_list[i + 1][1]:
+                    moves.append("right")
+                    
+            next_move = moves[0]
+            print(f"MOVE {game_state['turn']}: {next_move}")
+            return {"move": next_move}
+    
+    
     # Are there any safe moves left?
     safe_moves = []
     for move, isSafe in is_move_safe.items():
@@ -267,11 +197,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
 
     # Choose a random move from the safe ones
-    if not breathd_first:
-        next_move = random.choice(safe_moves)
-    else:
-        next_move = follow_path(add[0])
-
+    next_move = random.choice(safe_moves)
+    
     # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
     food = game_state['board']['food']
     print(f"MOVE {game_state['turn']}: {next_move}")

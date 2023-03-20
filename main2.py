@@ -173,10 +173,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     for move, isSafe in is_move_safe.items():
         if isSafe:
             safe_moves.append(move)
-    
-    print("----------------- SAFE MOVES ----------------")
-    print(safe_moves)
-    print("\n\n\n")
+
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
